@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package dfs;
+
+option go_package = "./internal/grpc;grpc";
+
+service MasterTracker {
+    rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
+    rpc DownloadFile(DownloadFileRequest) returns (DownloadFileResponse);
+    rpc GetFileList(GetFileListRequest) returns (GetFileListResponse);
+    rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+    rpc RegisterDataKeeper(RegisterDataKeeperRequest) returns (RegisterDataKeeperResponse);
+    rpc FileUploaded(FileUploadedRequest) returns (FileUploadedResponse);
+    rpc GetUploadDataKeeper(GetUploadDataKeeperRequest) returns (GetUploadDataKeeperResponse);
+}
+
+service DataKeeper {
+    rpc FileTransfer(FileTransferRequest) returns (FileTransferResponse);
+}
+
+message UploadFileRequest {
+    string filename = 1;
+    bytes file_data = 2; // Optional, not used in the new protocol
+}
+
+message UploadFileResponse {
+    string status = 1;
+    string data_keeper_address = 2;
+    string data_keeper_port = 3;
+}
+
+message DownloadFileRequest {
+    string filename = 1;
+}
+
+message DownloadFileResponse {
+    bytes file_data = 1;
+    string data_keeper_address = 2;
+}
+
+message FileTransferRequest {
+    string source_ip = 1;
+    string destination_ip = 2;
+    bytes file_data = 3;
+}
+
+message FileTransferResponse {
+    string status = 1;
+}
+
+message GetFileListRequest {}
+
+message GetFileListResponse {
+    repeated string filenames = 1;
+}
+
+message HeartbeatRequest {
+    string address = 1;
+}
+
+message HeartbeatResponse {
+    bool success = 1;
+}
+
+message RegisterDataKeeperRequest {
+    string address = 1;
+    string data_port = 2;
+}
+
+message RegisterDataKeeperResponse {
+    bool success = 1;
+}
+
+message FileUploadedRequest {
+    string filename = 1;
+    string data_keeper = 2;
+    string file_path = 3;
+}
+
+message FileUploadedResponse {
+    bool success = 1;
+}
+
+message GetUploadDataKeeperRequest {}
+
+message GetUploadDataKeeperResponse {
+    string address = 1;
+    string data_port = 2;
+}
