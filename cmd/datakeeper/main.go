@@ -32,14 +32,15 @@ type server struct {
     storageDir string
 }
 
+// FileTransfer transfers file data between nodes (used for replication in this example).
 func (s *server) FileTransfer(ctx context.Context, req *pb.FileTransferRequest) (*pb.FileTransferResponse, error) {
     sourceIP := req.GetSourceIp()
     destIP := req.GetDestinationIp()
     fileData := req.GetFileData()
 
-    log.Printf("Transferring file from %s to %s, size: %d bytes", sourceIP, destIP, len(fileData))
+    log.Printf("[Replication] File replication initiated from %s to %s, size: %d bytes", sourceIP, destIP, len(fileData))
 
-    // In a real implementation, you would store the file on disk
+    // For a replica, store the file using a naming convention (this is a simple example).
     filePath := filepath.Join(s.storageDir, fmt.Sprintf("replica_from_%s", sourceIP))
     if err := os.WriteFile(filePath, fileData, 0644); err != nil {
         log.Printf("Failed to save replicated file: %v", err)
@@ -49,7 +50,33 @@ func (s *server) FileTransfer(ctx context.Context, req *pb.FileTransferRequest) 
     return &pb.FileTransferResponse{Status: "Transfer completed"}, nil
 }
 
-// handleFileUpload handles TCP connections for file uploads
+// GetFile reads a file from the storage directory and returns its content.
+// This is used by the master to retrieve the file data from a source DataKeeper.
+func (s *server) GetFile(ctx context.Context, req *pb.GetFileRequest) (*pb.GetFileResponse, error) {
+    filename := req.GetFilename()
+    filePath := filepath.Join(s.storageDir, filename)
+    fileData, err := os.ReadFile(filePath)
+    if err != nil {
+        log.Printf("GetFile: failed to read file %s: %v", filename, err)
+        return nil, err
+    }
+    return &pb.GetFileResponse{FileData: fileData}, nil
+}
+
+// ReplicateFile writes the replicated file to disk.
+func (s *server) ReplicateFile(ctx context.Context, req *pb.ReplicateFileRequest) (*pb.FileTransferResponse, error) {
+    filename := req.GetFilename()
+    fileData := req.GetFileData()
+    filePath := filepath.Join(s.storageDir, filename)
+    if err := os.WriteFile(filePath, fileData, 0644); err != nil {
+        log.Printf("ReplicateFile: failed to write replica file %s: %v", filename, err)
+        return &pb.FileTransferResponse{Status: "Failed"}, nil
+    }
+    log.Printf("Replicated file %s successfully", filename)
+    return &pb.FileTransferResponse{Status: "Transfer completed"}, nil
+}
+
+// handleFileUpload handles TCP connections for file uploads.
 func (s *server) handleFileUpload(listener net.Listener) {
     for {
         conn, err := listener.Accept()
@@ -57,17 +84,15 @@ func (s *server) handleFileUpload(listener net.Listener) {
             log.Printf("Error accepting connection: %v", err)
             continue
         }
-
         go s.processFileUpload(conn)
     }
 }
 
-// processFileUpload handles an individual file upload connection
+// processFileUpload handles an individual file upload connection.
 func (s *server) processFileUpload(conn net.Conn) {
     defer conn.Close()
 
-    // First read the filename from the connection
-    // Read a 2-byte length prefix first
+    // Read the 2-byte length prefix to determine filename length.
     lenBuf := make([]byte, 2)
     if _, err := io.ReadFull(conn, lenBuf); err != nil {
         log.Printf("Error reading filename length: %v", err)
@@ -76,7 +101,7 @@ func (s *server) processFileUpload(conn net.Conn) {
     
     filenameLen := int(lenBuf[0]) | int(lenBuf[1])<<8
     
-    // Now read the actual filename
+    // Read the actual filename.
     filenameBuf := make([]byte, filenameLen)
     if _, err := io.ReadFull(conn, filenameBuf); err != nil {
         log.Printf("Error reading filename: %v", err)
@@ -95,7 +120,7 @@ func (s *server) processFileUpload(conn net.Conn) {
     }
     defer file.Close()
 
-    // Copy the rest of the data from connection to file
+    // Copy the rest of the data from the connection to the file.
     n, err := io.Copy(file, conn)
     if err != nil {
         log.Printf("Error saving file: %v", err)
@@ -104,14 +129,12 @@ func (s *server) processFileUpload(conn net.Conn) {
 
     log.Printf("Received file %s, %d bytes", filename, n)
 
-    // Notify master tracker about the upload
+    // Notify the master tracker about the upload.
     s.notifyMasterAboutUpload(filename, filePath)
 }
 
-// notifyMasterAboutUpload notifies the master tracker about a successful upload
+// notifyMasterAboutUpload notifies the master tracker of a successful file upload.
 func (s *server) notifyMasterAboutUpload(filename, filePath string) {
-    // Connect to master tracker
-    // Replace WithInsecure with WithTransportCredentials(insecure.NewCredentials())
     conn, err := grpc.Dial(*masterAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
         log.Printf("Failed to connect to master: %v", err)
@@ -122,21 +145,20 @@ func (s *server) notifyMasterAboutUpload(filename, filePath string) {
     client := pb.NewMasterTrackerClient(conn)
 
     resp, err := client.FileUploaded(context.Background(), &pb.FileUploadedRequest{
-		Filename:   filename,
-		DataKeeper: s.address,
-		FilePath:   filePath,
-	})
-	
-	if err != nil || !resp.Success {
-		log.Printf("Failed to notify master about upload: %v", err)
-	} else {
-		log.Printf("Master notified about file upload: %s", filename)
-	}
+        Filename:   filename,
+        DataKeeper: s.address,
+        FilePath:   filePath,
+    })
+    
+    if err != nil || !resp.Success {
+        log.Printf("Failed to notify master about upload: %v", err)
+    } else {
+        log.Printf("Master notified about file upload: %s", filename)
+    }
 }
 
-// sendHeartbeats periodically sends heartbeats to the master tracker
+// sendHeartbeats periodically sends heartbeats to the master tracker.
 func (s *server) sendHeartbeats() {
-    // Connect to master tracker
     conn, err := grpc.Dial(*masterAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
         log.Fatalf("Failed to connect to master for heartbeats: %v", err)
@@ -154,14 +176,12 @@ func (s *server) sendHeartbeats() {
             log.Printf("Heartbeat failed: %v", err)
         }
 
-        // Sleep for 1 second before next heartbeat
         time.Sleep(1 * time.Second)
     }
 }
 
-// registerWithMaster registers this data keeper with the master tracker
+// registerWithMaster registers this DataKeeper with the master tracker.
 func (s *server) registerWithMaster() error {
-    // Connect to master tracker
     conn, err := grpc.Dial(*masterAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
         return fmt.Errorf("failed to connect to master: %v", err)
@@ -170,7 +190,6 @@ func (s *server) registerWithMaster() error {
 
     client := pb.NewMasterTrackerClient(conn)
 
-    // Register this data keeper
     resp, err := client.RegisterDataKeeper(context.Background(), &pb.RegisterDataKeeperRequest{
         Address:  s.address,
         DataPort: s.dataPort,
@@ -187,18 +206,18 @@ func (s *server) registerWithMaster() error {
 func main() {
     flag.Parse()
 
-    // Create storage directory if it doesn't exist
+    // Create the storage directory if it doesn't exist.
     if err := os.MkdirAll(*storageDir, 0755); err != nil {
         log.Fatalf("Failed to create storage directory: %v", err)
     }
 
-    // Start gRPC server
+    // Start the gRPC server.
     grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%s", *port))
     if err != nil {
         log.Fatalf("Failed to listen on port %s: %v", *port, err)
     }
 
-    // Start data server for file transfers
+    // Start the data server for file transfers over TCP.
     dataListener, err := net.Listen("tcp", fmt.Sprintf(":%s", *dataPort))
     if err != nil {
         log.Fatalf("Failed to listen on data port %s: %v", *dataPort, err)
@@ -210,18 +229,18 @@ func main() {
         storageDir: *storageDir,
     }
 
-    // Register with master
+    // Register with the master tracker.
     if err := s.registerWithMaster(); err != nil {
         log.Fatalf("Failed to register with master: %v", err)
     }
 
-    // Start sending heartbeats
+    // Start sending heartbeats.
     go s.sendHeartbeats()
 
-    // Start handling file uploads
+    // Start handling file uploads via TCP.
     go s.handleFileUpload(dataListener)
 
-    // Start gRPC server
+    // Start the gRPC server.
     grpcServer := grpc.NewServer()
     pb.RegisterDataKeeperServer(grpcServer, s)
 

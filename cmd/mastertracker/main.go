@@ -178,26 +178,107 @@ func (s *server) UploadFile(ctx context.Context, req *pb.UploadFileRequest) (*pb
     }, nil
 }
 
-// DownloadFile and GetFileList implementations from the original code
+
 func (s *server) DownloadFile(ctx context.Context, req *pb.DownloadFileRequest) (*pb.DownloadFileResponse, error) {
     filename := req.GetFilename()
     log.Printf("Download request for file: %s", filename)
-    
+
     s.mu.RLock()
     fileRecord, exists := s.fileTable[filename]
     s.mu.RUnlock()
-    
+
     if !exists {
         return nil, grpc.Errorf(codes.NotFound, "File not found")
     }
-    
-    // In a real implementation, you would return information about where to download the file
-    // For simplicity, we're returning dummy data
+
+    // Build a list: include primary data keeper and any replica that is alive.
+    downloadNodes := []string{}
+    primaryKeeper := fileRecord.DataKeeper
+    if keeper, ok := s.dataKeepers[primaryKeeper]; ok && keeper.IsAlive {
+        // Split the host part from the primaryKeeper address (e.g., "localhost:50052" -> "localhost")
+        host, _, err := net.SplitHostPort(primaryKeeper)
+        if err != nil {
+            host = primaryKeeper
+        }
+        downloadNodes = append(downloadNodes, net.JoinHostPort(host, keeper.DataPort))
+    }
+    for _, replicaAddr := range fileRecord.ReplicaList {
+        if keeper, ok := s.dataKeepers[replicaAddr]; ok && keeper.IsAlive {
+            host, _, err := net.SplitHostPort(replicaAddr)
+            if err != nil {
+                host = replicaAddr
+            }
+            downloadNodes = append(downloadNodes, net.JoinHostPort(host, keeper.DataPort))
+        }
+    }
+    if len(downloadNodes) == 0 {
+        return nil, grpc.Errorf(codes.Unavailable, "No available data keepers for file download")
+    }
     return &pb.DownloadFileResponse{
-        FileData: []byte("sample file content"),
-        DataKeeperAddress: fileRecord.DataKeeper,
+        DataKeeperAddresses: downloadNodes,
     }, nil
 }
+
+
+
+// In masterTracker/main.go
+
+// func (s *server) DownloadFile(ctx context.Context, req *pb.DownloadFileRequest) (*pb.DownloadFileResponse, error) {
+//     filename := req.GetFilename()
+//     log.Printf("Download request for file: %s", filename)
+
+//     s.mu.RLock()
+//     fileRecord, exists := s.fileTable[filename]
+//     s.mu.RUnlock()
+
+//     if !exists {
+//         return nil, grpc.Errorf(codes.NotFound, "File not found")
+//     }
+
+//     // Build a list: include primary data keeper and any replica that is alive.
+//     downloadNodes := []string{}
+//     primaryKeeper := fileRecord.DataKeeper
+//     if keeper, ok := s.dataKeepers[primaryKeeper]; ok && keeper.IsAlive {
+//         downloadNodes = append(downloadNodes, net.JoinHostPort(primaryKeeper, keeper.DataPort))
+//     }
+//     for _, replicaAddr := range fileRecord.ReplicaList {
+//         if keeper, ok := s.dataKeepers[replicaAddr]; ok && keeper.IsAlive {
+//             downloadNodes = append(downloadNodes, net.JoinHostPort(replicaAddr, keeper.DataPort))
+//         }
+//     }
+//     if len(downloadNodes) == 0 {
+//         return nil, grpc.Errorf(codes.Unavailable, "No available data keepers for file download")
+//     }
+//     return &pb.DownloadFileResponse{
+//         DataKeeperAddresses: downloadNodes,
+//     }, nil
+// }
+
+
+
+
+
+
+// // DownloadFile and GetFileList implementations from the original code
+// func (s *server) DownloadFile(ctx context.Context, req *pb.DownloadFileRequest) (*pb.DownloadFileResponse, error) {
+//     filename := req.GetFilename()
+//     log.Printf("Download request for file: %s", filename)
+    
+//     s.mu.RLock()
+//     fileRecord, exists := s.fileTable[filename]
+//     s.mu.RUnlock()
+    
+//     if !exists {
+//         return nil, grpc.Errorf(codes.NotFound, "File not found")
+//     }
+    
+//     // In a real implementation, you would return information about where to download the file
+//     // For simplicity, we're returning dummy data
+//     return &pb.DownloadFileResponse{
+//         FileData: []byte("sample file content"),
+//         DataKeeperAddress: fileRecord.DataKeeper,
+//     }, nil
+// }
 
 func (s *server) GetFileList(ctx context.Context, req *pb.GetFileListRequest) (*pb.GetFileListResponse, error) {
     s.mu.RLock()

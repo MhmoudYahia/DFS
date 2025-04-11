@@ -16,6 +16,8 @@ service MasterTracker {
 
 service DataKeeper {
     rpc FileTransfer(FileTransferRequest) returns (FileTransferResponse);
+    rpc GetFile(GetFileRequest) returns (GetFileResponse);
+    rpc ReplicateFile(ReplicateFileRequest) returns (FileTransferResponse);
 }
 
 message UploadFileRequest {
@@ -34,8 +36,8 @@ message DownloadFileRequest {
 }
 
 message DownloadFileResponse {
-    bytes file_data = 1;
-    string data_keeper_address = 2;
+    // List of available data keeper download endpoints (host:download_port)
+    repeated string data_keeper_addresses = 1;
 }
 
 message FileTransferRequest {
@@ -65,6 +67,7 @@ message HeartbeatResponse {
 message RegisterDataKeeperRequest {
     string address = 1;
     string data_port = 2;
+    string download_port = 3; // New field for the separate download listener port
 }
 
 message RegisterDataKeeperResponse {
@@ -86,4 +89,17 @@ message GetUploadDataKeeperRequest {}
 message GetUploadDataKeeperResponse {
     string address = 1;
     string data_port = 2;
+}
+
+message GetFileRequest {
+    string filename = 1;
+}
+
+message GetFileResponse {
+    bytes file_data = 1;
+}
+
+message ReplicateFileRequest {
+    string filename = 1;
+    bytes file_data = 2;
 }

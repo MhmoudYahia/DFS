@@ -349,7 +349,9 @@ var MasterTracker_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	DataKeeper_FileTransfer_FullMethodName = "/dfs.DataKeeper/FileTransfer"
+	DataKeeper_FileTransfer_FullMethodName  = "/dfs.DataKeeper/FileTransfer"
+	DataKeeper_GetFile_FullMethodName       = "/dfs.DataKeeper/GetFile"
+	DataKeeper_ReplicateFile_FullMethodName = "/dfs.DataKeeper/ReplicateFile"
 )
 
 // DataKeeperClient is the client API for DataKeeper service.
@@ -357,6 +359,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataKeeperClient interface {
 	FileTransfer(ctx context.Context, in *FileTransferRequest, opts ...grpc.CallOption) (*FileTransferResponse, error)
+	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
+	ReplicateFile(ctx context.Context, in *ReplicateFileRequest, opts ...grpc.CallOption) (*FileTransferResponse, error)
 }
 
 type dataKeeperClient struct {
@@ -377,11 +381,33 @@ func (c *dataKeeperClient) FileTransfer(ctx context.Context, in *FileTransferReq
 	return out, nil
 }
 
+func (c *dataKeeperClient) GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFileResponse)
+	err := c.cc.Invoke(ctx, DataKeeper_GetFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataKeeperClient) ReplicateFile(ctx context.Context, in *ReplicateFileRequest, opts ...grpc.CallOption) (*FileTransferResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FileTransferResponse)
+	err := c.cc.Invoke(ctx, DataKeeper_ReplicateFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DataKeeperServer is the server API for DataKeeper service.
 // All implementations must embed UnimplementedDataKeeperServer
 // for forward compatibility.
 type DataKeeperServer interface {
 	FileTransfer(context.Context, *FileTransferRequest) (*FileTransferResponse, error)
+	GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error)
+	ReplicateFile(context.Context, *ReplicateFileRequest) (*FileTransferResponse, error)
 	mustEmbedUnimplementedDataKeeperServer()
 }
 
@@ -394,6 +420,12 @@ type UnimplementedDataKeeperServer struct{}
 
 func (UnimplementedDataKeeperServer) FileTransfer(context.Context, *FileTransferRequest) (*FileTransferResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FileTransfer not implemented")
+}
+func (UnimplementedDataKeeperServer) GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFile not implemented")
+}
+func (UnimplementedDataKeeperServer) ReplicateFile(context.Context, *ReplicateFileRequest) (*FileTransferResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReplicateFile not implemented")
 }
 func (UnimplementedDataKeeperServer) mustEmbedUnimplementedDataKeeperServer() {}
 func (UnimplementedDataKeeperServer) testEmbeddedByValue()                    {}
@@ -434,6 +466,42 @@ func _DataKeeper_FileTransfer_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DataKeeper_GetFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataKeeperServer).GetFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataKeeper_GetFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataKeeperServer).GetFile(ctx, req.(*GetFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataKeeper_ReplicateFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReplicateFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataKeeperServer).ReplicateFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataKeeper_ReplicateFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataKeeperServer).ReplicateFile(ctx, req.(*ReplicateFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DataKeeper_ServiceDesc is the grpc.ServiceDesc for DataKeeper service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -444,6 +512,14 @@ var DataKeeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FileTransfer",
 			Handler:    _DataKeeper_FileTransfer_Handler,
+		},
+		{
+			MethodName: "GetFile",
+			Handler:    _DataKeeper_GetFile_Handler,
+		},
+		{
+			MethodName: "ReplicateFile",
+			Handler:    _DataKeeper_ReplicateFile_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -178,11 +178,11 @@ func (x *DownloadFileRequest) GetFilename() string {
 }
 
 type DownloadFileResponse struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	FileData          []byte                 `protobuf:"bytes,1,opt,name=file_data,json=fileData,proto3" json:"file_data,omitempty"`
-	DataKeeperAddress string                 `protobuf:"bytes,2,opt,name=data_keeper_address,json=dataKeeperAddress,proto3" json:"data_keeper_address,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// List of available data keeper download endpoints (host:download_port)
+	DataKeeperAddresses []string `protobuf:"bytes,1,rep,name=data_keeper_addresses,json=dataKeeperAddresses,proto3" json:"data_keeper_addresses,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *DownloadFileResponse) Reset() {
@@ -215,18 +215,11 @@ func (*DownloadFileResponse) Descriptor() ([]byte, []int) {
 	return file_dfs_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *DownloadFileResponse) GetFileData() []byte {
+func (x *DownloadFileResponse) GetDataKeeperAddresses() []string {
 	if x != nil {
-		return x.FileData
+		return x.DataKeeperAddresses
 	}
 	return nil
-}
-
-func (x *DownloadFileResponse) GetDataKeeperAddress() string {
-	if x != nil {
-		return x.DataKeeperAddress
-	}
-	return ""
 }
 
 type FileTransferRequest struct {
@@ -505,6 +498,7 @@ type RegisterDataKeeperRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	DataPort      string                 `protobuf:"bytes,2,opt,name=data_port,json=dataPort,proto3" json:"data_port,omitempty"`
+	DownloadPort  string                 `protobuf:"bytes,3,opt,name=download_port,json=downloadPort,proto3" json:"download_port,omitempty"` // New field for the separate download listener port
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -549,6 +543,13 @@ func (x *RegisterDataKeeperRequest) GetAddress() string {
 func (x *RegisterDataKeeperRequest) GetDataPort() string {
 	if x != nil {
 		return x.DataPort
+	}
+	return ""
+}
+
+func (x *RegisterDataKeeperRequest) GetDownloadPort() string {
+	if x != nil {
+		return x.DownloadPort
 	}
 	return ""
 }
@@ -789,6 +790,146 @@ func (x *GetUploadDataKeeperResponse) GetDataPort() string {
 	return ""
 }
 
+type GetFileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFileRequest) Reset() {
+	*x = GetFileRequest{}
+	mi := &file_dfs_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFileRequest) ProtoMessage() {}
+
+func (x *GetFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_dfs_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFileRequest.ProtoReflect.Descriptor instead.
+func (*GetFileRequest) Descriptor() ([]byte, []int) {
+	return file_dfs_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetFileRequest) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+type GetFileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileData      []byte                 `protobuf:"bytes,1,opt,name=file_data,json=fileData,proto3" json:"file_data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFileResponse) Reset() {
+	*x = GetFileResponse{}
+	mi := &file_dfs_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFileResponse) ProtoMessage() {}
+
+func (x *GetFileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_dfs_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFileResponse.ProtoReflect.Descriptor instead.
+func (*GetFileResponse) Descriptor() ([]byte, []int) {
+	return file_dfs_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetFileResponse) GetFileData() []byte {
+	if x != nil {
+		return x.FileData
+	}
+	return nil
+}
+
+type ReplicateFileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
+	FileData      []byte                 `protobuf:"bytes,2,opt,name=file_data,json=fileData,proto3" json:"file_data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReplicateFileRequest) Reset() {
+	*x = ReplicateFileRequest{}
+	mi := &file_dfs_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReplicateFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReplicateFileRequest) ProtoMessage() {}
+
+func (x *ReplicateFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_dfs_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReplicateFileRequest.ProtoReflect.Descriptor instead.
+func (*ReplicateFileRequest) Descriptor() ([]byte, []int) {
+	return file_dfs_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ReplicateFileRequest) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *ReplicateFileRequest) GetFileData() []byte {
+	if x != nil {
+		return x.FileData
+	}
+	return nil
+}
+
 var File_dfs_proto protoreflect.FileDescriptor
 
 const file_dfs_proto_rawDesc = "" +
@@ -802,10 +943,9 @@ const file_dfs_proto_rawDesc = "" +
 	"\x13data_keeper_address\x18\x02 \x01(\tR\x11dataKeeperAddress\x12(\n" +
 	"\x10data_keeper_port\x18\x03 \x01(\tR\x0edataKeeperPort\"1\n" +
 	"\x13DownloadFileRequest\x12\x1a\n" +
-	"\bfilename\x18\x01 \x01(\tR\bfilename\"c\n" +
-	"\x14DownloadFileResponse\x12\x1b\n" +
-	"\tfile_data\x18\x01 \x01(\fR\bfileData\x12.\n" +
-	"\x13data_keeper_address\x18\x02 \x01(\tR\x11dataKeeperAddress\"v\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\"J\n" +
+	"\x14DownloadFileResponse\x122\n" +
+	"\x15data_keeper_addresses\x18\x01 \x03(\tR\x13dataKeeperAddresses\"v\n" +
 	"\x13FileTransferRequest\x12\x1b\n" +
 	"\tsource_ip\x18\x01 \x01(\tR\bsourceIp\x12%\n" +
 	"\x0edestination_ip\x18\x02 \x01(\tR\rdestinationIp\x12\x1b\n" +
@@ -818,10 +958,11 @@ const file_dfs_proto_rawDesc = "" +
 	"\x10HeartbeatRequest\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\"-\n" +
 	"\x11HeartbeatResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"R\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"w\n" +
 	"\x19RegisterDataKeeperRequest\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1b\n" +
-	"\tdata_port\x18\x02 \x01(\tR\bdataPort\"6\n" +
+	"\tdata_port\x18\x02 \x01(\tR\bdataPort\x12#\n" +
+	"\rdownload_port\x18\x03 \x01(\tR\fdownloadPort\"6\n" +
 	"\x1aRegisterDataKeeperResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"o\n" +
 	"\x13FileUploadedRequest\x12\x1a\n" +
@@ -834,7 +975,14 @@ const file_dfs_proto_rawDesc = "" +
 	"\x1aGetUploadDataKeeperRequest\"T\n" +
 	"\x1bGetUploadDataKeeperResponse\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1b\n" +
-	"\tdata_port\x18\x02 \x01(\tR\bdataPort2\x87\x04\n" +
+	"\tdata_port\x18\x02 \x01(\tR\bdataPort\",\n" +
+	"\x0eGetFileRequest\x12\x1a\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\".\n" +
+	"\x0fGetFileResponse\x12\x1b\n" +
+	"\tfile_data\x18\x01 \x01(\fR\bfileData\"O\n" +
+	"\x14ReplicateFileRequest\x12\x1a\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\x12\x1b\n" +
+	"\tfile_data\x18\x02 \x01(\fR\bfileData2\x87\x04\n" +
 	"\rMasterTracker\x12=\n" +
 	"\n" +
 	"UploadFile\x12\x16.dfs.UploadFileRequest\x1a\x17.dfs.UploadFileResponse\x12C\n" +
@@ -843,10 +991,12 @@ const file_dfs_proto_rawDesc = "" +
 	"\tHeartbeat\x12\x15.dfs.HeartbeatRequest\x1a\x16.dfs.HeartbeatResponse\x12U\n" +
 	"\x12RegisterDataKeeper\x12\x1e.dfs.RegisterDataKeeperRequest\x1a\x1f.dfs.RegisterDataKeeperResponse\x12C\n" +
 	"\fFileUploaded\x12\x18.dfs.FileUploadedRequest\x1a\x19.dfs.FileUploadedResponse\x12X\n" +
-	"\x13GetUploadDataKeeper\x12\x1f.dfs.GetUploadDataKeeperRequest\x1a .dfs.GetUploadDataKeeperResponse2Q\n" +
+	"\x13GetUploadDataKeeper\x12\x1f.dfs.GetUploadDataKeeperRequest\x1a .dfs.GetUploadDataKeeperResponse2\xce\x01\n" +
 	"\n" +
 	"DataKeeper\x12C\n" +
-	"\fFileTransfer\x12\x18.dfs.FileTransferRequest\x1a\x19.dfs.FileTransferResponseB\x16Z\x14./internal/grpc;grpcb\x06proto3"
+	"\fFileTransfer\x12\x18.dfs.FileTransferRequest\x1a\x19.dfs.FileTransferResponse\x124\n" +
+	"\aGetFile\x12\x13.dfs.GetFileRequest\x1a\x14.dfs.GetFileResponse\x12E\n" +
+	"\rReplicateFile\x12\x19.dfs.ReplicateFileRequest\x1a\x19.dfs.FileTransferResponseB\x16Z\x14./internal/grpc;grpcb\x06proto3"
 
 var (
 	file_dfs_proto_rawDescOnce sync.Once
@@ -860,7 +1010,7 @@ func file_dfs_proto_rawDescGZIP() []byte {
 	return file_dfs_proto_rawDescData
 }
 
-var file_dfs_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_dfs_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_dfs_proto_goTypes = []any{
 	(*UploadFileRequest)(nil),           // 0: dfs.UploadFileRequest
 	(*UploadFileResponse)(nil),          // 1: dfs.UploadFileResponse
@@ -878,6 +1028,9 @@ var file_dfs_proto_goTypes = []any{
 	(*FileUploadedResponse)(nil),        // 13: dfs.FileUploadedResponse
 	(*GetUploadDataKeeperRequest)(nil),  // 14: dfs.GetUploadDataKeeperRequest
 	(*GetUploadDataKeeperResponse)(nil), // 15: dfs.GetUploadDataKeeperResponse
+	(*GetFileRequest)(nil),              // 16: dfs.GetFileRequest
+	(*GetFileResponse)(nil),             // 17: dfs.GetFileResponse
+	(*ReplicateFileRequest)(nil),        // 18: dfs.ReplicateFileRequest
 }
 var file_dfs_proto_depIdxs = []int32{
 	0,  // 0: dfs.MasterTracker.UploadFile:input_type -> dfs.UploadFileRequest
@@ -888,16 +1041,20 @@ var file_dfs_proto_depIdxs = []int32{
 	12, // 5: dfs.MasterTracker.FileUploaded:input_type -> dfs.FileUploadedRequest
 	14, // 6: dfs.MasterTracker.GetUploadDataKeeper:input_type -> dfs.GetUploadDataKeeperRequest
 	4,  // 7: dfs.DataKeeper.FileTransfer:input_type -> dfs.FileTransferRequest
-	1,  // 8: dfs.MasterTracker.UploadFile:output_type -> dfs.UploadFileResponse
-	3,  // 9: dfs.MasterTracker.DownloadFile:output_type -> dfs.DownloadFileResponse
-	7,  // 10: dfs.MasterTracker.GetFileList:output_type -> dfs.GetFileListResponse
-	9,  // 11: dfs.MasterTracker.Heartbeat:output_type -> dfs.HeartbeatResponse
-	11, // 12: dfs.MasterTracker.RegisterDataKeeper:output_type -> dfs.RegisterDataKeeperResponse
-	13, // 13: dfs.MasterTracker.FileUploaded:output_type -> dfs.FileUploadedResponse
-	15, // 14: dfs.MasterTracker.GetUploadDataKeeper:output_type -> dfs.GetUploadDataKeeperResponse
-	5,  // 15: dfs.DataKeeper.FileTransfer:output_type -> dfs.FileTransferResponse
-	8,  // [8:16] is the sub-list for method output_type
-	0,  // [0:8] is the sub-list for method input_type
+	16, // 8: dfs.DataKeeper.GetFile:input_type -> dfs.GetFileRequest
+	18, // 9: dfs.DataKeeper.ReplicateFile:input_type -> dfs.ReplicateFileRequest
+	1,  // 10: dfs.MasterTracker.UploadFile:output_type -> dfs.UploadFileResponse
+	3,  // 11: dfs.MasterTracker.DownloadFile:output_type -> dfs.DownloadFileResponse
+	7,  // 12: dfs.MasterTracker.GetFileList:output_type -> dfs.GetFileListResponse
+	9,  // 13: dfs.MasterTracker.Heartbeat:output_type -> dfs.HeartbeatResponse
+	11, // 14: dfs.MasterTracker.RegisterDataKeeper:output_type -> dfs.RegisterDataKeeperResponse
+	13, // 15: dfs.MasterTracker.FileUploaded:output_type -> dfs.FileUploadedResponse
+	15, // 16: dfs.MasterTracker.GetUploadDataKeeper:output_type -> dfs.GetUploadDataKeeperResponse
+	5,  // 17: dfs.DataKeeper.FileTransfer:output_type -> dfs.FileTransferResponse
+	17, // 18: dfs.DataKeeper.GetFile:output_type -> dfs.GetFileResponse
+	5,  // 19: dfs.DataKeeper.ReplicateFile:output_type -> dfs.FileTransferResponse
+	10, // [10:20] is the sub-list for method output_type
+	0,  // [0:10] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
@@ -914,7 +1071,7 @@ func file_dfs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dfs_proto_rawDesc), len(file_dfs_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
