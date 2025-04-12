@@ -22,7 +22,7 @@ service DataKeeper {
 
 message UploadFileRequest {
     string filename = 1;
-    bytes file_data = 2; // Optional, not used in the new protocol
+    bytes file_data = 2; // Optional, not used in the new protocol.
 }
 
 message UploadFileResponse {
@@ -36,7 +36,7 @@ message DownloadFileRequest {
 }
 
 message DownloadFileResponse {
-    // List of available data keeper download endpoints (host:download_port)
+    // List of available data keeper download endpoints (host:download_port).
     repeated string data_keeper_addresses = 1;
 }
 
@@ -67,7 +67,7 @@ message HeartbeatResponse {
 message RegisterDataKeeperRequest {
     string address = 1;
     string data_port = 2;
-    string download_port = 3; // New field for the separate download listener port
+    string download_port = 3; // New field for the separate download listener port.
 }
 
 message RegisterDataKeeperResponse {

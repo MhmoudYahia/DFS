@@ -24,7 +24,7 @@ const (
 type UploadFileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
-	FileData      []byte                 `protobuf:"bytes,2,opt,name=file_data,json=fileData,proto3" json:"file_data,omitempty"` // Optional, not used in the new protocol
+	FileData      []byte                 `protobuf:"bytes,2,opt,name=file_data,json=fileData,proto3" json:"file_data,omitempty"` // Optional, not used in the new protocol.
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -179,7 +179,7 @@ func (x *DownloadFileRequest) GetFilename() string {
 
 type DownloadFileResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// List of available data keeper download endpoints (host:download_port)
+	// List of available data keeper download endpoints (host:download_port).
 	DataKeeperAddresses []string `protobuf:"bytes,1,rep,name=data_keeper_addresses,json=dataKeeperAddresses,proto3" json:"data_keeper_addresses,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -498,7 +498,7 @@ type RegisterDataKeeperRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	DataPort      string                 `protobuf:"bytes,2,opt,name=data_port,json=dataPort,proto3" json:"data_port,omitempty"`
-	DownloadPort  string                 `protobuf:"bytes,3,opt,name=download_port,json=downloadPort,proto3" json:"download_port,omitempty"` // New field for the separate download listener port
+	DownloadPort  string                 `protobuf:"bytes,3,opt,name=download_port,json=downloadPort,proto3" json:"download_port,omitempty"` // New field for the separate download listener port.
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

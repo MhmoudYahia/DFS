@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"os"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,9 +22,9 @@ var (
 	listFiles    = flag.Bool("list", false, "List available files")
 )
 
-// uploadFileToSystem handles the file upload
+// uploadFileToSystem handles the file upload.
 func uploadFileToSystem(client pb.MasterTrackerClient, filePath string) error {
-	// Read file data from disk
+	// Read file data from disk.
 	fileData, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
@@ -31,7 +32,7 @@ func uploadFileToSystem(client pb.MasterTrackerClient, filePath string) error {
 
 	filename := filepath.Base(filePath)
 
-	// Ask the master for an upload destination
+	// Ask the master for an upload destination.
 	uploadResp, err := client.UploadFile(context.Background(), &pb.UploadFileRequest{
 		Filename: filename,
 	})
@@ -47,7 +48,7 @@ func uploadFileToSystem(client pb.MasterTrackerClient, filePath string) error {
 	dataKeeperPort := uploadResp.DataKeeperPort
 	log.Printf("Uploading file to Data Keeper at %s (upload port: %s)", dataKeeperAddr, dataKeeperPort)
 
-	// Use the upload port for transferring file data via TCP
+	// Use the upload port for transferring file data via TCP.
 	dataTransferAddr := "localhost:" + dataKeeperPort
 	conn, err := net.Dial("tcp", dataTransferAddr)
 	if err != nil {
@@ -55,7 +56,7 @@ func uploadFileToSystem(client pb.MasterTrackerClient, filePath string) error {
 	}
 	defer conn.Close()
 
-	// Send the filename (with a 2-byte length prefix) then the file contents
+	// Send the filename (with a 2-byte length prefix) then the file contents.
 	filenameBuf := []byte(filename)
 	lenBuf := []byte{byte(len(filenameBuf)), byte(len(filenameBuf) >> 8)}
 
@@ -73,7 +74,7 @@ func uploadFileToSystem(client pb.MasterTrackerClient, filePath string) error {
 	return nil
 }
 
-// downloadFileFromSystem handles file download via TCP
+// downloadFileFromSystem handles file download via TCP.
 func downloadFileFromSystem(client pb.MasterTrackerClient, filename string) error {
 	resp, err := client.DownloadFile(context.Background(), &pb.DownloadFileRequest{
 		Filename: filename,
@@ -86,7 +87,7 @@ func downloadFileFromSystem(client pb.MasterTrackerClient, filename string) erro
 		return fmt.Errorf("no download addresses provided by master")
 	}
 
-	// Connect to the first available download endpoint
+	// Connect to the first available download endpoint.
 	dataTransferAddr := resp.DataKeeperAddresses[0]
 	log.Printf("Downloading file from Data Keeper at %s", dataTransferAddr)
 
@@ -96,7 +97,7 @@ func downloadFileFromSystem(client pb.MasterTrackerClient, filename string) erro
 	}
 	defer conn.Close()
 
-	// Send the filename to trigger a file transfer (use same 2-byte length prefix protocol)
+	// Send the filename (with the same 2-byte length prefix protocol).
 	filenameBuf := []byte(filename)
 	lenBuf := []byte{byte(len(filenameBuf)), byte(len(filenameBuf) >> 8)}
 	if _, err = conn.Write(lenBuf); err != nil {
@@ -106,21 +107,29 @@ func downloadFileFromSystem(client pb.MasterTrackerClient, filename string) erro
 		return fmt.Errorf("failed to send filename: %v", err)
 	}
 
-	// Read the file data returned
+	// Read the file data returned.
 	fileData, err := ioutil.ReadAll(conn)
 	if err != nil {
 		return fmt.Errorf("failed to read file data: %v", err)
 	}
 
-	if err = ioutil.WriteFile(filename, fileData, 0644); err != nil {
+	// Create "Downloaded" folder if it doesn't exist.
+	downloadFolder := "Downloaded"
+	if err := os.MkdirAll(downloadFolder, 0755); err != nil {
+		return fmt.Errorf("failed to create download folder: %v", err)
+	}
+
+	// Save the file within the "Downloaded" folder.
+	outPath := filepath.Join(downloadFolder, filename)
+	if err = ioutil.WriteFile(outPath, fileData, 0644); err != nil {
 		return fmt.Errorf("failed to save downloaded file: %v", err)
 	}
 
-	log.Printf("File %s downloaded successfully (%d bytes)", filename, len(fileData))
+	log.Printf("File %s downloaded successfully to %s (%d bytes)", filename, outPath, len(fileData))
 	return nil
 }
 
-// listAvailableFiles prints the list of available files
+// listAvailableFiles prints the list of available files.
 func listAvailableFiles(client pb.MasterTrackerClient) error {
 	resp, err := client.GetFileList(context.Background(), &pb.GetFileListRequest{})
 	if err != nil {
@@ -144,7 +153,7 @@ func main() {
 
 	client := pb.NewMasterTrackerClient(conn)
 
-	// Execute the selected command
+	// Execute the selected command.
 	if *listFiles {
 		if err := listAvailableFiles(client); err != nil {
 			log.Fatalf("Error listing files: %v", err)
