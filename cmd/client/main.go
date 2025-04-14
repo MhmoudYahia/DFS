@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
+	pb "dfs-project/internal/grpc"
 	"flag"
-	"os"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
-
-	pb "dfs-project/internal/grpc"
 
 	"google.golang.org/grpc"
 )
@@ -48,8 +47,15 @@ func uploadFileToSystem(client pb.MasterTrackerClient, filePath string) error {
 	dataKeeperPort := uploadResp.DataKeeperPort
 	log.Printf("Uploading file to Data Keeper at %s (upload port: %s)", dataKeeperAddr, dataKeeperPort)
 
+	// Extract host from the data keeper address (which might already include a port)
+	host, _, err := net.SplitHostPort(dataKeeperAddr)
+
+	if err != nil {
+		// If there's no port, use the address as-is
+		host = dataKeeperAddr
+	}
 	// Use the upload port for transferring file data via TCP.
-	dataTransferAddr := "localhost:" + dataKeeperPort
+	dataTransferAddr := net.JoinHostPort(host, dataKeeperPort)
 	conn, err := net.Dial("tcp", dataTransferAddr)
 	if err != nil {
 		return fmt.Errorf("failed to connect to Data Keeper: %v", err)

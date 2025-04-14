@@ -280,8 +280,26 @@ func main() {
         log.Fatalf("Failed to listen on download port %s: %v", *downloadPort, err)
     }
 
+	 // Get the externally accessible IP address (or use hostname)
+    // You can use one of these approaches:
+    // 1. Use a specific command line argument for external address
+    externalAddr := flag.String("external", "", "External IP or hostname for this data keeper")
+    flag.Parse()
+    
+    myAddress := *externalAddr
+    if myAddress == "" {
+        // Default to hostname if not specified
+        hostname, err := os.Hostname()
+        if err != nil {
+            log.Printf("Warning: Unable to get hostname, falling back to localhost: %v", err)
+            myAddress = "localhost"
+        } else {
+            myAddress = hostname
+        }
+    }
+
     s := &server{
-        address:      fmt.Sprintf("localhost:%s", *port),
+        address:      fmt.Sprintf("%s:%s", myAddress, *port),
         dataPort:     *dataPort,
         downloadPort: *downloadPort,
         storageDir:   *storageDir,
